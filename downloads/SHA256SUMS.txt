@@ -1,3 +1,3 @@
 9f9acde194d3cfdbdfc549670df2bc2e8f68a4bdb6d8341c3b114a9b91b5887e  earth-observation-material-collector-v1.1.zip
 9fb9e494573902300250795d66cfbfd64cd64ceef01ef07295377b54af7fcf04  earth-observation-material-collector-v1.1.1.zip
-8fb9f8ed55f614e9166ae0c8a4f42b5dd5f89da9c77428392cab76e9d83d5a97  earth-observation-material-collector-v1.2.zip
+1b8a3310b12fd5a2b6a1dc23043da31383f9fb6da1fda16d02d0d71ebd832b08  earth-observation-material-collector-v1.2.zip

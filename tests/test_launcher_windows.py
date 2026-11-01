@@ -47,7 +47,13 @@ class WindowsBatchTests(unittest.TestCase):
         import threading
         from urllib.request import urlopen
         with tempfile.TemporaryDirectory() as tmp:
-            process=subprocess.Popen([sys.executable,'-X','utf8','-u',str(ROOT/'launcher.py'),'--no-browser','--port','0','--data-dir',tmp],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8',cwd=ROOT)
+            from zipfile import ZipFile
+            extracted=Path(tmp)/'日本語 空白 & ZIP展開';extracted.mkdir()
+            with ZipFile(ROOT/'downloads'/'earth-observation-material-collector-v1.2.zip') as archive:
+                archive.extractall(extracted)
+            launch_root=extracted/'earth-observation-material-collector'
+            self.assertEqual((launch_root/'起動.bat').read_bytes(),(ROOT/'起動.bat').read_bytes())
+            process=subprocess.Popen([sys.executable,'-X','utf8','-u',str(launch_root/'launcher.py'),'--no-browser','--port','0','--data-dir',tmp],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8',cwd=launch_root)
             lines=queue.Queue()
             def read():
                 for line in process.stdout:lines.put(line)
