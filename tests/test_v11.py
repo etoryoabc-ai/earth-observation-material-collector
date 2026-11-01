@@ -36,7 +36,7 @@ class HTTPTests(unittest.TestCase):
             self.assertEqual(send.call_count,1)
             self.assertEqual(http.last_info['origin'],'api_cache')
             for path in Path(tmp).glob('*.json'):
-                self.assertNotIn('test-secret',path.read_text())
+                self.assertNotIn('test-secret',path.read_text(encoding='utf-8'))
     def test_pixabay_language_photo_filter_and_free_license(self):
         with tempfile.TemporaryDirectory() as tmp,patch('collector.connectors.urlopen',side_effect=lambda *a,**k:Response({'hits':[{'id':7,'pageURL':'https://pixabay.com/photos/otter-7','tags':'sea otter'}]})) as send:
             a=Pixabay(JsonHTTP(tmp),'test-secret').search('ラッコ','photo')[0]
@@ -128,7 +128,7 @@ class SearchAndAnalysisTests(unittest.TestCase):
             target=export_project(p,tmp)
             self.assertEqual(scene_metrics(p)[0]['candidates'],0)
             self.assertEqual(scene_metrics(p,True)[0]['candidates'],9)
-            report=json.loads((target/'validation_report.json').read_text())
+            report=json.loads((target/'validation_report.json').read_text(encoding='utf-8'))
             self.assertEqual(report['real'][0]['live_requests'],0)
             self.assertTrue((target/'scene_metrics_mock.csv').exists())
 

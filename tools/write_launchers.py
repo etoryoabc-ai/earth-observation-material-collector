@@ -23,7 +23,7 @@ set "PYTHON_CMD=python.exe"
 :run_app
 if not exist "%~dp0launcher.py" goto files_missing
 if not exist "%~dp0app.py" goto files_missing
-%PYTHON_CMD% -u "%~dp0launcher.py" __MODE__
+%PYTHON_CMD% -X utf8 -u "%~dp0launcher.py" __MODE__
 set "APP_EXIT=%ERRORLEVEL%"
 if not "%APP_EXIT%"=="0" goto app_error
 echo.

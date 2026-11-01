@@ -22,8 +22,9 @@ class WindowsBatchTests(unittest.TestCase):
             # supplied by setup-python, independent of preinstalled Python versions.
             env['PATH']=str(Path(os.environ['SystemRoot'])/'System32')
             if not missing_python:env['PATH']=str(Path(sys.executable).parent)+';'+env['PATH']
-            cmd=f'chcp 932 >nul & call "{root / "起動.bat"}"'
-            r=subprocess.run([os.environ['COMSPEC'],'/d','/c',cmd],input=b'\r\n',stdout=subprocess.PIPE,stderr=subprocess.STDOUT,cwd=tmp,env=env,timeout=30)
+            env['EO_LAUNCHER']=str(root/'起動.bat')
+            cmd=f'"{env["COMSPEC"]}" /d /c chcp 932 >nul & call "%EO_LAUNCHER%"'
+            r=subprocess.run(cmd,input=b'\r\n',stdout=subprocess.PIPE,stderr=subprocess.STDOUT,cwd=tmp,env=env,timeout=30)
             output=r.stdout.decode('cp932',errors='replace')
             self.assertIn('Press any key to close this window.',output)
             self.assertNotIn('rvorlevel',output)
