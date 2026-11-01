@@ -1,4 +1,6 @@
-# 地球の観察録｜素材収集・確認ツール v1.1
+# 地球の観察録｜素材収集・確認ツール v1.1.1
+
+Windows起動修正版：[配布ZIP](downloads/earth-observation-material-collector-v1.1.1.zip) / [修正内容と手順](docs/v1.1.1起動修正.md)。バッチをASCII・CRLFに固定し、起動診断ログを追加しました。
 
 独立した Windows 11 / Python 3.12 用ローカルアプリです。起動.bat と既存の採用画面を維持しています。Python標準ライブラリのみで動作し、有料サービス・有料API・AI解析を呼び出しません。
 
