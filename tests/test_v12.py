@@ -143,3 +143,18 @@ class MetadataAndRightsTests(unittest.TestCase):
         self.assertTrue(any('導入された' in u['text'] for u in body))
         self.assertEqual(set(u['chapter'] for u in body),{'導入','第1章'})
         validate(source,scenes)
+
+    def test_request_budget_fairly_visits_later_scenes_and_both_media(self):
+        from types import SimpleNamespace
+        class LimitedCatalog:
+            name='Wikimedia Commons'
+            http=SimpleNamespace(max_requests=8)
+            def __init__(self):self.calls=[]
+            def search(self,q,kind,page):
+                self.calls.append((q,kind));return []
+        p=new_project('第1章\nラッコ。\n第2章\nケルプ。\n第3章\nシャチ。\n第4章\nウニ。','budget.md')
+        catalog=LimitedCatalog();run_search(p,[catalog],lambda _:None)
+        self.assertEqual(len(catalog.calls),8)
+        self.assertEqual(sum(k=='video' for _,k in catalog.calls),4)
+        self.assertEqual(sum(k=='photo' for _,k in catalog.calls),4)
+        self.assertEqual(set(q for q,_ in catalog.calls),{'sea otter','kelp','killer whale','sea urchin'})

@@ -93,6 +93,7 @@ def run_search(project,connectors,save,stop=lambda:False):
     save(project)
     failed=set()
     project['provider_issues']={}
+    searchable_count=max(1,sum(s.get('searchable',True) for s in project['scenes']))
     try:
         for scene_index, scene in enumerate(project['scenes'],1):
             if not scene.get('searchable',True):continue
@@ -103,6 +104,13 @@ def run_search(project,connectors,save,stop=lambda:False):
             active=lambda:[a for a in all_items() if usable(a)]
             seen={(a['provider'],a['provider_id'],a['type']) for a in all_items()}
             plan=queries(scene)
+            scene_usage={}
+            allowances={c.name:max(2,getattr(getattr(c,'http',None),'max_requests',searchable_count*100)//searchable_count) for c in connectors}
+            # Sparse official catalogs are predominantly English. With a large
+            # manuscript, reserve video AND photo attempts for every scene rather
+            # than exhausting the whole run on the first difficult scene.
+            if allowances and min(allowances.values())<6:
+                plan=sorted(plan,key=lambda item:0 if re.search('[A-Za-z]',item[0]) else 1)
             # Search video across languages before images. Always try one English
             # video query when available, even if Japanese results filled a quota.
             for kind,goal in (('video',6),('photo',3)):
@@ -116,6 +124,11 @@ def run_search(project,connectors,save,stop=lambda:False):
                         page_found=False
                         for connector in connectors:
                             if connector.name in failed:continue
+                            allowance=allowances[connector.name]
+                            kind_cap=allowance-max(1,allowance//3) if kind=='video' else allowance
+                            if scene_usage.get(connector.name,0)>=kind_cap:
+                                project.setdefault('scene_budget_notes',{})[str(sid)]='先頭シーンへの予算集中を避け、各シーンの動画・写真探索を優先しました。不足分は再検索できます。'
+                                continue
                             if stop():
                                 project['search_status']='一時停止';project['search_phase']='paused';return
                             key=hashlib.sha256(f'{mock}|{sid}|{connector.name}|{query}|{kind}|{page}'.encode()).hexdigest()
@@ -127,6 +140,7 @@ def run_search(project,connectors,save,stop=lambda:False):
                                 continue
                             entry=dict(scene=sid,provider=connector.name,query=query,stage=stage,kind=kind,page=page,
                                        run_id=run_id,mode='mock' if mock else 'real',revision=project.get('search_revision',0),at=now())
+                            scene_usage[connector.name]=scene_usage.get(connector.name,0)+1
                             project['progress'].update(provider=connector.name,query=query,kind=kind,requests=project['progress']['requests']+1)
                             save(project)
                             try:
@@ -203,7 +217,7 @@ def scene_metrics(project,mock=False):
             confirmed_relevance=sum(a.get('relevance')=='高' and a.get('human_checked') is True for a in items),
             live_requests=sum(x.get('origin')=='api_network' for x in project.get('attempt_history',attempts) if x.get('scene')==s['id']),cached_requests=sum(x.get('origin')=='api_cache' for x in project.get('attempt_history',attempts) if x.get('scene')==s['id']),
             missing=bool(deficit),reason=' / '.join(deficit+reasons) if deficit else '候補目標達成（内容・権利は未確定）',
-            alternative=s['alternatives'],suggestion=s.get('slide_request') or '同じ生物の一般映像・写真・図解を検討。指定地の記録と誤認させない。',
+            alternative=s['alternatives'],suggestion=(s.get('slide_request') or '同じ生物の一般映像・写真・図解を検討。指定地の記録と誤認させない。')+' '+project.get('scene_budget_notes',{}).get(str(s['id']),''),
             mode='mock' if mock else 'real'))
     return rows
 

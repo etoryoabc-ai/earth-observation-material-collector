@@ -56,6 +56,7 @@ test_identical_signed_download_url_deduplicates (test_v12.MetadataAndRightsTests
 test_metadata_image_video_type_and_link_only (test_v12.MetadataAndRightsTests.test_metadata_image_video_type_and_link_only) ... ok
 test_narrative_prefix_is_not_heading_and_subheadings_not_chapters (test_v12.MetadataAndRightsTests.test_narrative_prefix_is_not_heading_and_subheadings_not_chapters) ... ok
 test_number_collisions_after_merge_are_resolved (test_v12.MetadataAndRightsTests.test_number_collisions_after_merge_are_resolved) ... ok
+test_request_budget_fairly_visits_later_scenes_and_both_media (test_v12.MetadataAndRightsTests.test_request_budget_fairly_visits_later_scenes_and_both_media) ... ok
 test_150_repeated_sentences_are_not_150_scenes (test_v12.SceneGroupingTests.test_150_repeated_sentences_are_not_150_scenes) ... ok
 test_comparison_observation_and_hypothesis_separate_records (test_v12.SceneGroupingTests.test_comparison_observation_and_hypothesis_separate_records) ... ok
 test_merge_split_preserves_adopted_and_original_files (test_v12.SceneGroupingTests.test_merge_split_preserves_adopted_and_original_files) ... ok
@@ -67,6 +68,6 @@ test_partial_success_reports_error_and_counts (test_v12.SearchStateTests.test_pa
 test_success_zero_not_failed_or_collection_success (test_v12.SearchStateTests.test_success_zero_not_failed_or_collection_success) ... ok
 
 ----------------------------------------------------------------------
-Ran 67 tests in 0.765s
+Ran 68 tests in 0.730s
 
 OK (skipped=5)
