@@ -12,7 +12,8 @@ from .connectors import providers, MANUAL_SOURCES
 from .downloads import permitted, download
 from .search import run_search, shortages, scene_metrics
 from .export import export_project
-from .settings import public_settings
+from .settings import public_settings, provider_catalog
+from .status import overview
 
 ROOT = Path(__file__).resolve().parent.parent
 TOKEN = secrets.token_urlsafe(32)
@@ -43,12 +44,22 @@ def search_job(project_id, mock):
     except Exception:
         with LOCK:
             p = STORE.load(project_id)
-            p['search_status'] = '処理エラー。設定を確認して再開してください。'
+            p['search_status'] = '検索処理エラー。実検索の成功とは扱いません。'
+            p['search_phase']='failed'
+            p['search_outcome']='error'
             STORE.save(p)
     finally:
         with LOCK:
             BUSY.discard(project_id)
             STOP.discard(project_id)
+
+
+def preflight(project):
+    from .search import queries
+    catalog=provider_catalog()
+    scenes=[s for s in project['scenes'] if s.get('searchable',True)]
+    chapters=list(dict.fromkeys(u['chapter'] for u in project.get('text_units',[]) if u['kind']=='body')) or list(dict.fromkeys(s['chapter'] for s in scenes))
+    return dict(characters=len(project['source']),chapters=len(chapters),scenes=len(scenes),units=sum(u['kind']=='body' for u in project.get('text_units',[])),catalog=catalog,enabled=[x['name'] for x in catalog if x['enabled']],estimated_request_upper_bound=sum(len(queries(s))*4 for s in scenes)*sum(x['enabled'] for x in catalog),request_budget_per_provider=public_settings()['budget'],validation=project.get('source_validation',{}))
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -114,10 +125,14 @@ class Handler(BaseHTTPRequestHandler):
                 from .connectors import APIError
                 results=[]
                 try:
-                    for connector in providers(False, selected=['Pexels','Pixabay'],cache_dir=STORE.root/'api_cache'):
+                    catalog=provider_catalog()
+                    for item in catalog:
+                        if not item['enabled']:
+                            results.append(dict(provider=item['name'],kind='video/photo',status='blocked' if item['selected'] else 'not_selected',error_code='missing_key' if item['key_required'] else 'unsupported',message=item['state'],at=now()))
+                    for connector in providers(False,cache_dir=STORE.root/'api_cache'):
                         for kind in ('video','photo'):
                             try:
-                                found=connector.search('sea otter',kind,1)
+                                found=connector.search('ocean' if connector.name=='NASA' else 'sea otter',kind,1)
                                 info=connector.http.last_info
                                 row=dict(provider=connector.name,kind=kind,status='success',count=len(found),origin=info.get('origin','unverified'),at=now())
                             except APIError as exc:
@@ -132,7 +147,7 @@ class Handler(BaseHTTPRequestHandler):
                         from .core import atomic_json
                         atomic_json(STORE.root/'connection_check.json',DIAGNOSTICS)
             threading.Thread(target=check,daemon=True).start()
-            return {'message':'Pexels・Pixabayの動画/写真API接続を確認中です。'}
+            return {'message':'選択された無料検索APIの接続を確認中です。'}
         if route == '/api/create':
             if not str(d.get('name', '')).lower().endswith(('.txt', '.md', '.markdown')):
                 raise ValueError('TXT / Markdown の原稿を指定してください。')
@@ -142,7 +157,7 @@ class Handler(BaseHTTPRequestHandler):
         pid = d['project_id']
         if route == '/api/state':
             p = STORE.load(pid)
-            return dict(project=p, busy=pid in BUSY, shortages=shortages(p),metrics=scene_metrics(p),mock_metrics=scene_metrics(p,True))
+            return dict(project=p, busy=pid in BUSY, shortages=shortages(p),metrics=scene_metrics(p),mock_metrics=scene_metrics(p,True),overview=overview(p,provider_catalog()),preflight=preflight(p))
         if route == '/api/stop':
             if pid not in BUSY:
                 return {'message':'現在実行中の検索はありません。'}
@@ -150,6 +165,8 @@ class Handler(BaseHTTPRequestHandler):
             return {'message': '現在のAPI要求後に停止します。'}
         p = safe_project(pid)
         if route == '/api/search':
+            if not d.get('mock') and not any(x['enabled'] for x in provider_catalog()):
+                raise ValueError('有効な検索先がありません。API設定でCommonsまたはNASAを選択してください。無料キーは必須ではありません。')
             mock = d.get('mock') is True
             if p['assets'] and p['mock'] != mock:
                 raise ValueError('実検索と模擬テストは別プロジェクトにしてください。')
@@ -159,6 +176,8 @@ class Handler(BaseHTTPRequestHandler):
         if route == '/api/expand':
             sid=int(d.get('scene_id',0))
             if sid and not any(s['id']==sid for s in p['scenes']):raise ValueError('不正なシーン番号です。')
+            if not p.get('mock') and not any(x['enabled'] for x in provider_catalog()):
+                raise ValueError('有効な検索先がありません。キー不要のCommonsまたはNASAを有効にしてください。')
             p['search_revision']=p.get('search_revision',0)+1
             STORE.save(p)
             BUSY.add(pid)
@@ -174,21 +193,22 @@ class Handler(BaseHTTPRequestHandler):
             if 'english_queries' in d:
                 scene['english_queries']=[str(x)[:200] for x in d['english_queries'][:12] if str(x).strip()]
             p['search_revision']=p.get('search_revision',0)+1
-        elif route == '/api/split':
-            scene = next(s for s in p['scenes'] if s['id'] == int(d['scene_id']))
-            if p['assets'] or p['attempts']:
-                raise ValueError('手動分割は検索開始前に行ってください。')
-            cut = int(d['offset'])
-            if not 0 < cut < len(scene['text']):
-                raise ValueError('分割位置が原稿の範囲外です。')
-            from .core import describe
-            index = p['scenes'].index(scene)
-            original_end, original_text = scene['end'], scene['text']
-            scene.update(end=scene['start']+cut, text=original_text[:cut], **describe(original_text[:cut]))
-            tail = dict(id=0, chapter=scene['chapter'], start=scene['end'], end=original_end, text=original_text[cut:], **describe(original_text[cut:]))
-            p['scenes'].insert(index+1, tail)
-            for i, s in enumerate(p['scenes'], 1):
-                s['id'] = i
+        elif route in ('/api/split','/api/merge'):
+            from .scenes import edit_structure
+            edit_structure(p,'split' if route.endswith('split') else 'merge',int(d['scene_id']),d.get('offset'))
+        elif route == '/api/regroup':
+            # Old v1.1 projects are never overwritten: return a new project with
+            # original source and grouped scenes, preserving the old work intact.
+            updated=new_project(p['source'],p['name'])
+            updated['previous_project_id']=p['id']
+            STORE.save(updated)
+            return updated
+        elif route == '/api/assignment':
+            asset=next(x for x in p['assets'] if x['id']==d['asset_id'])
+            sid=int(d['scene_id'])
+            if not any(s['id']==sid for s in p['scenes']):raise ValueError('シーン番号が不正です。')
+            asset['scene_id']=sid
+            asset['assignment_note']='手動でシーンの割当を変更'
         elif route == '/api/asset':
             a = next(x for x in p['assets'] if x['id'] == d['asset_id'])
             strings = ('creator', 'institution', 'license_name', 'license_url', 'commercial', 'modification', 'attribution', 'terms', 'evidence', 'risk', 'relevance', 'relevance_reason', 'place_certainty', 'species_certainty', 'year_certainty', 'record_type', 'citation_reason', 'citation_script', 'citation_range')
@@ -211,7 +231,7 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError('A/B区分・商用利用「可」・ライセンス名とURL・確認根拠・人間による確認が必要です。C/D/Eと模擬素材は採用できません。')
             updated['decision'] = decision
             if decision == 'adopt' and not updated.get('material_number'):
-                updated['material_number'] = max([x.get('material_number', 0) for x in p['assets'] if x['scene_id'] == a['scene_id']], default=0)+1
+                updated['material_number'] = max([x.get('material_number', 0) for x in p['assets']], default=0)+1
             a.update(updated)
         elif route == '/api/diagram':
             from .diagrams import save_diagram
@@ -228,6 +248,10 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     for a in p['assets']:
                         if a['decision'] != 'adopt':
+                            continue
+                        if not a.get('download_url'):
+                            a['download_error']='リンク候補です。自動取得は未対応。提供元の利用条件と公式取得手段を確認してください。'
+                            with LOCK:STORE.save(p)
                             continue
                         try:
                             download(a, STORE.path(pid).parent / 'media')

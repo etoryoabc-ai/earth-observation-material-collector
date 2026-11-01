@@ -1,6 +1,7 @@
 {
   "PEXELS_API_KEY": "",
   "PIXABAY_API_KEY": "",
-  "SEARCH_PROVIDERS": ["Pexels", "Pixabay"],
+  "SEARCH_PROVIDERS": ["Wikimedia Commons", "NASA"],
+  "PROVIDERS_EXPLICIT_V12": true,
   "MAX_REQUESTS_PER_PROVIDER": 80
 }

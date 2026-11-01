@@ -46,6 +46,13 @@ class Redirects(HTTPRedirectHandler):
 def download(asset, root):
     if asset.get('decision') != 'adopt' or not permitted(asset):
         raise ValueError('採用済み・A/B区分・人間の権利確認済み素材だけ保存できます。')
+    if asset.get('downloaded') and asset.get('sha256'):
+        existing=Path(asset['downloaded'])
+        if existing.is_file():
+            with existing.open('rb') as source:
+                digest=hashlib.file_digest(source,'sha256').hexdigest()
+            if digest!=asset['sha256']:raise ValueError('既存の採用素材が変更されています。確認してください。')
+            return str(existing)
     check_url(asset['download_url'], asset['provider'])
     scene_dir = Path(root) / f'scene_{asset["scene_id"]:03d}'
     scene_dir.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,7 @@ import tempfile
 from zipfile import ZipFile,ZIP_DEFLATED
 
 ROOT=Path(__file__).resolve().parent.parent
-NAME='earth-observation-material-collector-v1.1.1.zip'
+NAME='earth-observation-material-collector-v1.2.zip'
 FOLDER='earth-observation-material-collector'
 
 def verify(path):
@@ -23,7 +23,7 @@ def verify(path):
         manifest=json.loads((extracted/'package_manifest.json').read_text(encoding='utf-8'))
         for name,digest in manifest['sha256'].items():
             if hashlib.sha256((extracted/name).read_bytes()).hexdigest()!=digest:raise ValueError('Extracted file mismatch: '+name)
-        for name in ('起動.bat','テスト.bat'):
+        for name in ('起動.bat','テスト.bat','診断.bat'):
             b=(extracted/name).read_bytes();b.decode('ascii')
             if b.startswith(b'\xef\xbb\xbf') or b'\n' in b.replace(b'\r\n',b'') or b'\r' in b.replace(b'\r\n',b''):raise ValueError('Invalid batch encoding/newlines')
             if b!=(ROOT/name).read_bytes():raise ValueError('Source and ZIP batch differ')
@@ -40,7 +40,7 @@ def build(path):
     import re
     secret=re.compile(rb'gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----')
     if any(secret.search(b) for b in files.values()):raise ValueError('Credential pattern detected; packaging stopped')
-    manifest=dict(version='1.1.1',sha256={rel:hashlib.sha256(b).hexdigest() for rel,b in files.items()},batch_format='ASCII / no BOM / CRLF')
+    manifest=dict(version='1.2',sha256={rel:hashlib.sha256(b).hexdigest() for rel,b in files.items()},batch_format='ASCII / no BOM / CRLF')
     path.parent.mkdir(exist_ok=True)
     with ZipFile(path,'w',ZIP_DEFLATED) as z:
         for rel,b in files.items():z.writestr(FOLDER+'/'+rel,b)

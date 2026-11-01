@@ -111,7 +111,12 @@ class SearchAndAnalysisTests(unittest.TestCase):
         scenes=analyze(text)
         self.assertEqual(''.join(s['text'] for s in scenes),text)
         first=next(s for s in scenes if '1987' in s['text']);second=next(s for s in scenes if '1997' in s['text'])
-        self.assertNotEqual(first['id'],second['id'])
+        records=[x for scene in scenes for x in scene['statements']]
+        record1987=next(x for x in records if '1987' in x['text'])
+        record1997=next(x for x in records if '1997' in x['text'])
+        self.assertNotEqual(record1987['source_start'],record1997['source_start'])
+        self.assertNotIn('1997',record1987['text'])
+        self.assertNotIn('1987',record1997['text'])
         for s in scenes:
             for x in s['statements']:
                 self.assertEqual(text[x['source_start']:x['source_end']],x['text'])

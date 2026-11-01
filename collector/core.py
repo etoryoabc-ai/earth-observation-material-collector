@@ -34,55 +34,15 @@ def describe(text):
 
 
 def analyze(source):
-    """Paragraph/sentence semantic cues, never drop or normalize a source character.
+    from .scenes import group
+    return group(source)[1]
 
-    This is intentionally not an LLM. Boundaries prefer changes in explicit
-    location, dated records, hypothesis and explanation. Ambiguous text is kept.
-    """
-    if not source.strip():
-        raise ValueError('原稿が空です。')
-    headings = list(re.finditer(r'(?m)^(?:#{1,6}\s+.+|第[0-9０-９一二三四五六七八九十]+章[^\r\n]*|[0-9０-９]+[.．、]\s*[^\r\n]+)\r?$', source))
-    bounds = sorted(set([0, len(source)] + [m.start() for m in headings]))
-    scenes = []
-    chapter = '本文'
-    for lo, hi in zip(bounds, bounds[1:]):
-        matching = next((m for m in headings if m.start() == lo), None)
-        if matching:
-            chapter = matching.group().strip().lstrip('#').strip()
-        text = source[lo:hi]
-        cuts = [lo]
-        # Split at explicit editorial/semantic transitions, retaining every byte
-        # decoded as text. No inherited place/year assertions across boundaries.
-        from .analysis import mentions, GEO, BIO
-        last_signature = None
-        for m in re.finditer(r'[^。！？]+[。！？]?|[。！？]', text):
-            segment = m.group()
-            d = describe(segment)
-            signature = (tuple(x['ja'] for x in d['places']), tuple(x['ja'] for x in d['animals']), tuple(d['years']), d['claim_type'])
-            if last_signature is not None:
-                changed = (signature[0] and signature[0] != last_signature[0]) or (signature[1] and last_signature[1] and signature[1] != last_signature[1]) or (signature[2] and signature[2] != last_signature[2]) or signature[3] != last_signature[3]
-                if changed and lo + m.start() > lo:
-                    cuts.append(lo + m.start())
-            if segment.strip():
-                last_signature = signature
-        cuts.extend(lo+m.end() for m in re.finditer(r'\n[ \t]*\r?\n',text) if lo+m.end()<hi)
-        cuts = sorted(set(cuts))
-        cuts.append(hi)
-        for start, end in zip(cuts, cuts[1:]):
-            fragment = source[start:end]
-            if not fragment.strip() and scenes:
-                scenes[-1]['end'] = end
-                scenes[-1]['text'] += fragment
-                continue
-            scenes.append(dict(id=len(scenes)+1, chapter=chapter, start=start, end=end,
-                               text=fragment, **describe(fragment)))
-    assert ''.join(s['text'] for s in scenes) == source
-    from .analysis import annotate_offsets
-    return annotate_offsets(scenes)
 
 def new_project(source, name):
-    return dict(version=2, id=uuid.uuid4().hex, name=name, created=now(), source=source,
-                analysis_mode='v1.1 文単位の根拠付き規則解析・AI不使用・費用なし', scenes=analyze(source),
+    from .scenes import group, validate
+    text_units, scenes = group(source)
+    return dict(version=3, id=uuid.uuid4().hex, name=name, created=now(), source=source,
+                analysis_mode='v1.2 文解析→映像シーンの二段階解析・AI不使用・費用なし', scenes=scenes, text_units=text_units, source_validation=validate(source,scenes),
                 assets=[], attempts={}, logs=[], search_status='未開始', mock=False)
 
 class Store:

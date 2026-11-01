@@ -9,6 +9,10 @@ BIO = {
  'アザラシ': ('seal','',('アザラシ',),('seal underwater',)),
  'アシカ': ('sea lion','',('アシカ','sea lion'),('sea lion swimming',)),
  'クジラ': ('whale','',('クジラ',),('whale ocean',)),
+ '魚': ('fish','',('魚',),('fish underwater',)),
+ '甲殻類': ('crustacean','',('甲殻類',),('crustacean underwater',)),
+ 'カニ': ('crab','',('カニ','crab'),('crab underwater',)),
+ 'エビ': ('shrimp','',('エビ','shrimp'),('shrimp underwater',)),
  'サケ': ('salmon','',('サケ','サーモン','salmon'),('salmon swimming',)),
 }
 GEO = {
@@ -66,8 +70,14 @@ def details(text):
         statements.append(dict(text=st,local_start=m.start(),local_end=m.end(),
             places=[x['ja'] for x in mentions(st,GEO)], animals=[x['ja'] for x in mentions(st,BIO,True)],
             years=re.findall(r'(?<!\d)(?:1[5-9]|20)\d{2}(?:年代|年)?(?!\d)',st),
-            status='仮説（原稿の記述・未検証）' if re.search('仮説|可能性|かもしれ|推測|と考え|とされ',st) else '原稿の記述（未検証）',
+            status='仮説（原稿の記述・未検証）' if re.search('仮説|可能性|かもしれ|推測|と考え|とされ',st) else '観察されたという原稿記述（出典要確認）' if re.search('観察|観測|目撃|確認された',st) else '原稿の記述（未検証）',
             association='複数地点：各地点への年代の割当は要確認' if len(mentions(st,GEO))>1 else '同一文に明示された情報のみ。実際の対応は要確認'))
+    for statement in statements:
+        st=statement['text'];statement['roles']=[]
+        for actor,target in [('ラッコ','ウニ'),('ウニ','ケルプ'),('シャチ','ラッコ')]:
+            target_pattern='ケルプ|海藻|コンブ' if target=='ケルプ' else re.escape(target)
+            if actor in st and re.search(target_pattern,st) and re.search('食べ|食う|捕食|採餌',st):
+                statement['roles'].append(dict(actor=actor,target=target,action='摂食・捕食についての記述',certainty='否定・仮説を含むため要確認' if re.search('ない|仮説|可能性|かもしれ|とされ',st) else '原稿内の明示記述・出典未確認',evidence=st))
     needs=[]
     if animals:needs.append(' / '.join(x['ja'] for x in animals)+'の実写')
     if intents:needs.append(' / '.join(x['ja'] for x in intents))

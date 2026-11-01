@@ -1,17 +1,9 @@
 # Windows用配布ファイル
 
-最新版（Windows起動修正）：[earth-observation-material-collector-v1.1.1.zip](earth-observation-material-collector-v1.1.1.zip)
+[最新版 v1.2 ZIPをダウンロード](earth-observation-material-collector-v1.2.zip)
 
-[起動修正の内容と手順](../docs/v1.1.1起動修正.md)
+[使用説明書](../docs/v1.2使用説明書.md) / [検証結果と制限](../docs/v1.2検証結果と制限.md) / [ZIPのSHA-256](SHA256SUMS.txt)
 
-以下のv1.1 ZIPは旧版です。起動.batの問題があるため、v1.1.1を使用してください。
+ZIPを「すべて展開」し、起動.batをダブルクリックしてください。Python 3.12が必要です。キー不要でCommons/NASAを検索先に使う構成ですが、接続環境や該当素材の存在によって結果は異なります。APIキーやdataは配布していません。
 
-[earth-observation-material-collector-v1.1.zip](earth-observation-material-collector-v1.1.zip)
-
-GitHub上ではZIPのファイルページを開き、Download raw file（ダウンロード）を選択してください。非公開リポジトリの場合はGitHubへのログインが必要です。
-
-展開後に「起動.bat」をダブルクリックします。Python 3.12が必要です。APIキーはアプリの設定画面でローカル保存してください。キーをGitHubに登録する必要はありません。
-
-SHA-256は [SHA256SUMS.txt](SHA256SUMS.txt) を参照してください。ソースコードの説明と具体的なWindows手順は、リポジトリ直下のREADMEとdocs/Windows使用手順.mdにあります。
-
-本版の実API・実ラッコ完成原稿による収集実証は未完了です。詳しくはdocs/v1.1検証結果.mdを確認してください。
+旧版v1.1/v1.1.1のZIPも履歴として保持しています。通常は最新版を使用してください。

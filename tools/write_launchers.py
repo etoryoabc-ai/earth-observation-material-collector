@@ -60,5 +60,5 @@ def expected(mode):
     return TEMPLATE.replace('__MODE__',mode).replace('\n','\r\n').encode('ascii')
 
 if __name__=='__main__':
-    for name,mode in [('起動.bat',''),('テスト.bat','--test')]:
+    for name,mode in [('起動.bat',''),('テスト.bat','--test'),('診断.bat','--diagnose')]:
         (ROOT/name).write_bytes(expected(mode))

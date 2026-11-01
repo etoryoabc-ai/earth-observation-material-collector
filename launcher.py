@@ -35,12 +35,21 @@ def launch(root, test=False):
     old_cwd=Path.cwd()
     try:
         sys.stdout=Tee(old_out,log);sys.stderr=Tee(old_err,log)
-        print('地球の観察録 起動診断（v1.1.1）')
+        print('地球の観察録 起動診断（v1.2）')
         print('Python:',sys.version.split()[0])
         print('実行ファイル:',sys.executable)
         print('アプリフォルダ:',root)
         print('診断ログ:',log_path)
         os.chdir(root)
+        if '--diagnose' in sys.argv:
+            from collector.settings import public_settings
+            settings=public_settings()
+            print('起動診断：Python 3.12を検出しました。')
+            for item in settings['catalog']:
+                print(item['name']+': '+item['state'])
+            print('APIキーの値は表示しません。接続はアプリの接続確認ボタンで検証してください。')
+            print('原稿・dataは変更しません。')
+            return 0
         if test:
             return subprocess.call([sys.executable,'-m','unittest','discover','-s','tests','-v'],cwd=root)
         if not (root/'app.py').is_file():

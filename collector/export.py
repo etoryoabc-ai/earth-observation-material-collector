@@ -30,7 +30,11 @@ def export_project(project, root):
     target.mkdir(exist_ok=False)
     scenes, assets = project['scenes'], project['assets']
     csv_write(target / 'scene_list.csv', scenes)
-    csv_write(target / 'asset_candidates.csv', assets, ['id', 'scene_id', 'title', 'type', 'provider', 'page_url', 'query', 'search_stage', 'relevance', 'relevance_reason', 'place_certainty', 'species_certainty', 'year_certainty', 'record_type', 'width', 'height', 'duration', 'format', 'size', 'mock', 'api_origin', 'api_fetched_at', 'match_status', 'record_type'])
+    csv_write(target / 'sentence_units.csv',project.get('text_units',[]))
+    from .status import overview
+    atomic_json(target/'search_summary.json',overview(project))
+    atomic_json(target/'source_validation.json',project.get('source_validation',{}))
+    csv_write(target / 'asset_candidates.csv', assets, ['id', 'scene_id', 'title', 'type', 'provider', 'page_url', 'query', 'search_stage', 'relevance', 'relevance_reason', 'place_certainty', 'species_certainty', 'year_certainty', 'record_type', 'width', 'height', 'duration', 'format', 'size', 'mock', 'api_origin', 'api_fetched_at', 'match_status', 'record_type', 'access_mode', 'provider_date', 'assignment_note'])
     csv_write(target / 'download_manifest.csv', assets, ['id', 'scene_id', 'title', 'decision', 'downloaded', 'download_error', 'sha256', 'mock'])
     csv_write(target / 'license_report.csv', assets, ['id', 'scene_id', 'title', 'page_url', 'creator', 'institution', 'license_name', 'license_url', 'commercial', 'modification', 'attribution', 'terms', 'checked_at', 'evidence', 'risk', 'human_checked', 'citation_reason', 'citation_script', 'citation_range', 'citation_distinct', 'citation_source', 'citation_main', 'commercial_policy', 'license_scope', 'policy_evidence_url', 'policy_checked_at', 'free_only'])
     csv_write(target / 'missing_assets.csv', shortages(project), ['scene_id', 'candidates', 'videos', 'photos', 'adopted', 'reason', 'alternative', 'suggestion'])
@@ -53,6 +57,10 @@ def export_project(project, root):
     real = [a for a in assets if not a.get('mock') and usable(a)]
     summary = f'# 収集結果\n\n原稿：{project["name"]}\n\n解析：{project["analysis_mode"]}\n\nシーン：{len(scenes)} / 実候補：{len(real)} / 模擬：{sum(bool(a.get('mock')) for a in assets)} / 採用：{len(adopted)}\n\n状態：{project["search_status"]}\n\n不足シーン：{len(shortages(project))}\n\n実際の場所・種・年代・権利は人間の確認が必要です。模擬結果は収集実績ではありません。\n\n' + '\n'.join(project['logs'])
     summary += '\n\n## シーン別の実素材検索結果\n\n|シーン|候補|動画|写真|動画率|一般映像|確認済み高関連度|実API応答|キャッシュ|不足理由|\n|---|---|---|---|---|---|---|---|---|---|\n'
+    report=overview(project)
+    summary += '\n次の操作：'+report['next_action']+'\n\n'
+    for provider in report['providers']:
+        summary += provider['name']+'：'+provider['state']+' / 応答 '+str(provider['returned'])+'件 / 候補 '+str(provider['candidates'])+'件 / '+provider['reason']+'\n'
     for row in scene_metrics(project):
         summary += '|'+ '|'.join(str(row[k]).replace('|','/') for k in ('scene_id','candidates','videos','photos','video_ratio','general','confirmed_relevance','live_requests','cached_requests','reason'))+'|\n'
     summary += '\n模擬検索の結果は scene_metrics_mock.csv に分離しています。実API接続確認の結果はアプリ内の設定欄と data/connection_check.json で確認できます。\n'

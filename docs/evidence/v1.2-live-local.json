@@ -1,0 +1,64 @@
+{
+  "started_at": "2026-11-01T06:19:48.807982+00:00",
+  "mode": "real_network",
+  "actual_otter_manuscript": "not_provided",
+  "input_scope": "明示した接続・素材検索クエリのみ。本物の完成原稿の実証ではない。",
+  "checks": [
+    {
+      "provider": "Wikimedia Commons",
+      "query": "sea otter",
+      "kind": "video",
+      "state": "blocked_or_error",
+      "code": "network",
+      "reason": "接続またはJSON応答エラー。ネットワーク設定を確認してください。"
+    },
+    {
+      "provider": "Wikimedia Commons",
+      "query": "sea otter",
+      "kind": "photo",
+      "state": "blocked_or_error",
+      "code": "network",
+      "reason": "接続またはJSON応答エラー。ネットワーク設定を確認してください。"
+    },
+    {
+      "provider": "Wikimedia Commons",
+      "query": "kelp forest",
+      "kind": "video",
+      "state": "blocked_or_error",
+      "code": "budget",
+      "reason": "今回の提供元別検索予算に達しました。進行を保存し、再開できます。"
+    },
+    {
+      "provider": "Wikimedia Commons",
+      "query": "kelp forest",
+      "kind": "photo",
+      "state": "blocked_or_error",
+      "code": "budget",
+      "reason": "今回の提供元別検索予算に達しました。進行を保存し、再開できます。"
+    },
+    {
+      "provider": "NASA",
+      "query": "ocean",
+      "kind": "video",
+      "state": "blocked_or_error",
+      "code": "network",
+      "reason": "接続またはJSON応答エラー。ネットワーク設定を確認してください。"
+    },
+    {
+      "provider": "NASA",
+      "query": "ocean",
+      "kind": "photo",
+      "state": "blocked_or_error",
+      "code": "network",
+      "reason": "接続またはJSON応答エラー。ネットワーク設定を確認してください。"
+    }
+  ],
+  "otter_kelp_candidates": [],
+  "mock_used": false,
+  "finished_at": "2026-11-01T06:19:59.443610+00:00",
+  "real_candidates": 0,
+  "videos": 0,
+  "photos": 0,
+  "result": "real_otter_kelp_candidates_not_verified",
+  "actual_manuscript_validation": "not_run_missing_manuscript"
+}

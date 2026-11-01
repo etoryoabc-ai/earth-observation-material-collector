@@ -7,7 +7,7 @@ import json
 import os
 import re
 import time
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode, urlsplit, quote
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from .core import now
@@ -55,7 +55,7 @@ class JsonHTTP:
             except (OSError,ValueError): pass
         if quota.get('retry_at',0)>time.time():
             raise RateLimited('前回のAPI上限による待機中です。時間を空けて再開してください。',quota['retry_at'])
-        req = Request(url, headers={'User-Agent': 'EarthObservationCollector/1.1 (local documentary research)', **(headers or {})})
+        req = Request(url, headers={'User-Agent': 'EarthObservationCollector/1.2 (https://github.com/etoryoabc-ai/earth-observation-material-collector; local documentary research)', **(headers or {})})
         for attempt in range(3):
             if self.requests.get(host,0)>=self.max_requests:
                 raise APIError('今回の提供元別検索予算に達しました。進行を保存し、再開できます。','budget')
@@ -75,6 +75,11 @@ class JsonHTTP:
                 with urlopen(req, timeout=15) as response:
                     data=json.load(response)
                     if not isinstance(data,dict): raise ValueError('invalid API response')
+                    if data.get('error'):
+                        error=data['error']
+                        if isinstance(error,dict) and error.get('code') in ('maxlag','ratelimited'):
+                            raise RateLimited('提供元が混雑・利用上限を通知しました。時間を空けて再開してください。',time.time()+60)
+                        raise APIError('公式APIがエラー応答を返しました（HTTP 200）。検索成功として扱いません。','api')
                     fetched=now()
                     self.last_info=dict(origin='api_network',fetched_at=fetched,endpoint=host,http_status=response.status)
                     remaining=response.headers.get('X-Ratelimit-Remaining')
@@ -95,7 +100,8 @@ class JsonHTTP:
                     atomic_json(quota_path,quota)
                     raise RateLimited(retry_at=quota['retry_at']) from None
                 if exc.code in (401,403):
-                    raise APIError(f'HTTP {exc.code}：APIキーまたはネットワークの許可を確認してください。','auth') from None
+                    code='auth' if exc.code==401 or host in ('api.pexels.com','pixabay.com') else 'access'
+                    raise APIError(f'HTTP {exc.code}：認証・提供元のアクセス制限・ネットワーク設定を確認してください。',code) from None
                 if exc.code in (400,404,422):
                     raise APIError(f'HTTP {exc.code}：検索条件またはページ範囲を変更します。','query') from None
                 if exc.code<500 or attempt==2:
@@ -117,7 +123,7 @@ def base(provider, identity, title, page, kind):
                 download_url='', thumbnail='', duration='', width=0, height=0, format='', size='',
                 relevance='要確認', relevance_reason='検索語への一致のみ。映像の内容は未確認。',
                 place_certainty='要確認', species_certainty='要確認', year_certainty='要確認',
-                api_origin='unverified', metadata_text='', free_only=True, license_scope='素材固有の条件は未確認',
+                access_mode='link_only',provider_date='',api_origin='unverified', metadata_text='', free_only=True, license_scope='素材固有の条件は未確認',
                 commercial_policy='要確認', policy_evidence_url='', policy_checked_at='',
                 match_status='tentative', record_type='要確認', downloaded='', download_error='', citation_reason='',
                 citation_script='', citation_range='', citation_distinct=False,
@@ -152,6 +158,7 @@ class Pexels:
                     a.update(download_url=f['link'], width=f.get('width', 0), height=f.get('height', 0), format='mp4')
             else:
                 a.update(download_url=item.get('src', {}).get('original', ''), format='jpg')
+            if a.get('download_url'):a['access_mode']='download'
             a['api_origin']='mock' if a.get('mock') else getattr(getattr(self,'http',None),'last_info',{}).get('origin','fixture')
             a['api_fetched_at']=getattr(getattr(self,'http',None),'last_info',{}).get('fetched_at','')
             out.append(a)
@@ -196,6 +203,7 @@ class Pixabay:
             else:
                 a.update(download_url=item.get('largeImageURL', ''), width=item.get('imageWidth', 0),
                          height=item.get('imageHeight', 0), size=item.get('imageSize', ''), format='jpg')
+            if a.get('download_url'):a['access_mode']='download'
             a['api_origin']='mock' if a.get('mock') else getattr(getattr(self,'http',None),'last_info',{}).get('origin','fixture')
             a['api_fetched_at']=getattr(getattr(self,'http',None),'last_info',{}).get('fetched_at','')
             out.append(a)
@@ -207,7 +215,7 @@ class Commons:
         self.http = http
     def search(self, query, kind, page=1):
         params = dict(action='query', format='json', generator='search', gsrsearch=query + (' filetype:video' if kind == 'video' else ' filetype:bitmap'),
-                      gsrnamespace=6, gsrlimit=15, gsroffset=(page-1)*15, prop='imageinfo', iiprop='url|size|mime|extmetadata', iiurlwidth=480)
+                      gsrnamespace=6, gsrlimit=15, gsroffset=(page-1)*15, prop='imageinfo', iiprop='url|size|mime|extmetadata|metadata|commonmetadata', iiurlwidth=480)
         data = self.http.get('https://commons.wikimedia.org/w/api.php', params)
         out = []
         for item in data.get('query', {}).get('pages', {}).values():
@@ -220,12 +228,14 @@ class Commons:
             get = lambda key: clean(meta.get(key, {}).get('value', ''))
             a = base(self.name, item['pageid'], item['title'], info.get('descriptionurl', ''), kind)
             license_name, license_url = get('LicenseShortName'), get('LicenseUrl')
-            a.update(creator=get('Artist'), license_name=license_name, license_url=license_url,
+            a.update(metadata_text=clean(item['title'])+' '+get('ImageDescription')+' '+get('Categories'),provider_date=get('DateTimeOriginal'),creator=get('Artist'), license_name=license_name, license_url=license_url,
                      terms=get('UsageTerms') + ' / ' + get('Restrictions'),
                      evidence='Commons imageinfo.extmetadata（個別ページで確認が必要）',
                      thumbnail=info.get('thumburl', ''), download_url=info.get('url', ''),
                      width=info.get('width', 0), height=info.get('height', 0), size=info.get('size', ''),
                      format=mime.split('/')[-1])
+            a['duration']=next((x.get('value','') for x in info.get('commonmetadata',[])+info.get('metadata',[]) if x.get('name','').lower() in ('length','duration','playtime_seconds')), '')
+            a['access_mode']='download' if a.get('download_url') else 'link_only'
             # Conservative: only recognized commercial licenses without known restrictions.
             if license_url.startswith('https://creativecommons.org/') and not get('Restrictions'):
                 if re.fullmatch(r'CC BY(?:-SA)? [1-4]\.0', license_name):
@@ -233,6 +243,7 @@ class Commons:
                              attribution='必須', checked_at=now())
                 elif license_name in ('CC0', 'CC0 1.0'):
                     a.update(risk='A', commercial='可', modification='可', attribution='不要', checked_at=now())
+            if a.get('download_url'):a['access_mode']='download'
             a['api_origin']='mock' if a.get('mock') else getattr(getattr(self,'http',None),'last_info',{}).get('origin','fixture')
             a['api_fetched_at']=getattr(getattr(self,'http',None),'last_info',{}).get('fetched_at','')
             out.append(a)
@@ -248,12 +259,13 @@ class NASA:
         for item in data.get('collection', {}).get('items', []):
             d = (item.get('data') or [{}])[0]
             ident = d.get('nasa_id', '')
-            a = base(self.name, ident, d.get('title', query), 'https://images.nasa.gov/details/' + ident, kind)
-            a.update(creator=d.get('photographer', ''), institution=d.get('center', 'NASA'),
+            a = base(self.name, ident, d.get('title', query), 'https://images.nasa.gov/details/' + quote(ident,safe=''), kind)
+            a.update(metadata_text=clean(d.get('title',''))+' '+clean(d.get('description',''))+' '+clean(d.get('keywords','')), provider_date=d.get('date_created',''), access_mode='link_only',creator=d.get('photographer',d.get('secondary_creator','')), institution=d.get('center', 'NASA'),
                      evidence='NASA公式検索API。第三者権利・利用条件は未確認。',
                      license_url='https://www.nasa.gov/nasa-brand-center/images-and-media/',
                      thumbnail=next((x.get('href', '') for x in item.get('links', []) if x.get('rel') == 'preview'), ''))
             # No assumption that every NASA-hosted file is public domain; link only.
+            if a.get('download_url'):a['access_mode']='download'
             a['api_origin']='mock' if a.get('mock') else getattr(getattr(self,'http',None),'last_info',{}).get('origin','fixture')
             a['api_fetched_at']=getattr(getattr(self,'http',None),'last_info',{}).get('fetched_at','')
             out.append(a)
@@ -266,6 +278,7 @@ class Mock:
         for i in range(3):
             a = base('MOCK', f'{query}-{kind}-{page}-{i}', f'【模擬データ】{query} {i+1}', 'https://example.invalid/mock', kind)
             a.update(mock=True, api_origin='mock', evidence='テスト専用。実在素材ではありません。')
+            if a.get('download_url'):a['access_mode']='download'
             a['api_origin']='mock' if a.get('mock') else getattr(getattr(self,'http',None),'last_info',{}).get('origin','fixture')
             a['api_fetched_at']=getattr(getattr(self,'http',None),'last_info',{}).get('fetched_at','')
             out.append(a)
@@ -277,8 +290,9 @@ def providers(mock=False, selected=None, cache_dir=None):
     from .settings import read_settings
     settings=read_settings()
     http=JsonHTTP(cache_dir=cache_dir,max_requests=settings['MAX_REQUESTS_PER_PROVIDER'])
-    available=[Pexels(http,settings.get('PEXELS_API_KEY','')),Pixabay(http,settings.get('PIXABAY_API_KEY','')),Commons(http),NASA(http)]
-    return [p for p in available if p.name in (selected or settings['SEARCH_PROVIDERS'])]
+    available=[Commons(http),NASA(http),Pexels(http,settings.get('PEXELS_API_KEY','')),Pixabay(http,settings.get('PIXABAY_API_KEY',''))]
+    chosen=selected if selected is not None else settings['SEARCH_PROVIDERS']
+    return [p for p in available if p.name in chosen and (not hasattr(p,'key') or bool(p.key))]
 
 
 MANUAL_SOURCES = {
