@@ -1,0 +1,47 @@
+{
+  "browser_errors": [],
+  "mocked_transport_tests": "reported separately",
+  "live_api_success": false,
+  "live_validation_status": "blocked_missing_keys",
+  "actual_manuscript": "not provided",
+  "connection_checks": {
+    "running": false,
+    "results": [
+      {
+        "provider": "Pexels",
+        "kind": "video",
+        "status": "blocked",
+        "error_code": "missing_key",
+        "message": "PEXELS_API_KEY 未設定（無料キーが必要）",
+        "at": "2026-11-01T04:00:25.669355+00:00"
+      },
+      {
+        "provider": "Pexels",
+        "kind": "photo",
+        "status": "blocked",
+        "error_code": "missing_key",
+        "message": "PEXELS_API_KEY 未設定（無料キーが必要）",
+        "at": "2026-11-01T04:00:25.669370+00:00"
+      },
+      {
+        "provider": "Pixabay",
+        "kind": "video",
+        "status": "blocked",
+        "error_code": "missing_key",
+        "message": "PIXABAY_API_KEY 未設定（無料キーが必要）",
+        "at": "2026-11-01T04:00:25.669377+00:00"
+      },
+      {
+        "provider": "Pixabay",
+        "kind": "photo",
+        "status": "blocked",
+        "error_code": "missing_key",
+        "message": "PIXABAY_API_KEY 未設定（無料キーが必要）",
+        "at": "2026-11-01T04:00:25.669381+00:00"
+      }
+    ]
+  },
+  "real_candidates": 0,
+  "export_exists": true,
+  "mobile_no_horizontal_overflow": true
+}

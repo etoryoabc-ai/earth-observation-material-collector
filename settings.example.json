@@ -1,0 +1,6 @@
+{
+  "PEXELS_API_KEY": "",
+  "PIXABAY_API_KEY": "",
+  "SEARCH_PROVIDERS": ["Pexels", "Pixabay"],
+  "MAX_REQUESTS_PER_PROVIDER": 80
+}
