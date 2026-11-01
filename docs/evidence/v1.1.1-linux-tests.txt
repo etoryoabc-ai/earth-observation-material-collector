@@ -1,0 +1,53 @@
+test_encoding (test_collector.AnalysisTests.test_encoding) ... ok
+test_location_year_hypothesis_separation (test_collector.AnalysisTests.test_location_year_hypothesis_separation) ... ok
+test_lossless_offsets (test_collector.AnalysisTests.test_lossless_offsets) ... ok
+test_queries_do_not_substitute_places (test_collector.AnalysisTests.test_queries_do_not_substitute_places) ... ok
+test_unknown_no_invention (test_collector.AnalysisTests.test_unknown_no_invention) ... ok
+test_commons_license (test_collector.ConnectorTests.test_commons_license) ... ok
+test_nasa_never_assumes_public_domain (test_collector.ConnectorTests.test_nasa_never_assumes_public_domain) ... ok
+test_pexels_one_video_multiple_resolutions (test_collector.ConnectorTests.test_pexels_one_video_multiple_resolutions) ... ok
+test_pixabay_shape (test_collector.ConnectorTests.test_pixabay_shape) ... ok
+test_csv_formula (test_collector.SafetyExportTests.test_csv_formula) ... ok
+test_diagram_requires_verified_evidence_and_escapes (test_collector.SafetyExportTests.test_diagram_requires_verified_evidence_and_escapes) ... ok
+test_gate (test_collector.SafetyExportTests.test_gate) ... ok
+test_persistence_and_exports (test_collector.SafetyExportTests.test_persistence_and_exports) ... ok
+test_url_ssrf (test_collector.SafetyExportTests.test_url_ssrf) ... ok
+test_identical_results_not_inflated (test_collector.SearchTests.test_identical_results_not_inflated) ... ok
+test_mock_resume_dedupe_and_ratio (test_collector.SearchTests.test_mock_resume_dedupe_and_ratio) ... ok
+test_rate_limit_persists_retries_and_peers (test_collector.SearchTests.test_rate_limit_persists_retries_and_peers) ... ok
+test_stop (test_collector.SearchTests.test_stop) ... ok
+test_auth_and_split_roundtrip (test_collector.ServerTests.test_auth_and_split_roundtrip) ... ok
+test_cannot_adopt_unverified (test_collector.ServerTests.test_cannot_adopt_unverified) ... ok
+test_home_and_unknown_route (test_collector.ServerTests.test_home_and_unknown_route) ... ok
+test_ignored_range_restarts_full_file (test_downloads.DownloadTests.test_ignored_range_restarts_full_file) ... ok
+test_range_resume_and_no_overwrite (test_downloads.DownloadTests.test_range_resume_and_no_overwrite) ... ok
+test_batch_exact_ascii_crlf_no_bom (test_launcher.LauncherTests.test_batch_exact_ascii_crlf_no_bom) ... ok
+test_exception_logged_nonzero (test_launcher.LauncherTests.test_exception_logged_nonzero) ... ok
+test_exit_code_preserved (test_launcher.LauncherTests.test_exit_code_preserved) ... ok
+test_log_failure_reports_error (test_launcher.LauncherTests.test_log_failure_reports_error) ... ok
+test_success_logged (test_launcher.LauncherTests.test_success_logged) ... ok
+test_wrong_python_rejected (test_launcher.LauncherTests.test_wrong_python_rejected) ... ok
+test_app_failure_is_nonzero_and_pauses (test_launcher_windows.WindowsBatchTests.test_app_failure_is_nonzero_and_pauses) ... skipped 'Windows cmd.exe is required'
+test_incomplete_extraction_pauses (test_launcher_windows.WindowsBatchTests.test_incomplete_extraction_pauses) ... skipped 'Windows cmd.exe is required'
+test_japanese_path_cp932_start_and_pause (test_launcher_windows.WindowsBatchTests.test_japanese_path_cp932_start_and_pause) ... skipped 'Windows cmd.exe is required'
+test_python_missing_pauses (test_launcher_windows.WindowsBatchTests.test_python_missing_pauses) ... skipped 'Windows cmd.exe is required'
+test_real_application_http_start_via_launcher (test_launcher_windows.WindowsBatchTests.test_real_application_http_start_via_launcher) ... skipped 'Windows cmd.exe is required'
+test_429_persisted_cooldown_and_secret_redaction (test_v11.HTTPTests.test_429_persisted_cooldown_and_secret_redaction) ... ok
+test_auth_error_no_url_or_key_disclosure (test_v11.HTTPTests.test_auth_error_no_url_or_key_disclosure) ... ok
+test_authenticated_real_transport_and_separate_cache_provenance (test_v11.HTTPTests.test_authenticated_real_transport_and_separate_cache_provenance) ... ok
+test_no_paid_or_arbitrary_host (test_v11.HTTPTests.test_no_paid_or_arbitrary_host) ... ok
+test_pixabay_language_photo_filter_and_free_license (test_v11.HTTPTests.test_pixabay_language_photo_filter_and_free_license) ... ok
+test_english_fallback_multi_subject_and_later_page (test_v11.SearchAndAnalysisTests.test_english_fallback_multi_subject_and_later_page) ... ok
+test_english_scientific_and_no_invented_whale (test_v11.SearchAndAnalysisTests.test_english_scientific_and_no_invented_whale) ... ok
+test_general_does_not_inherit_place_year (test_v11.SearchAndAnalysisTests.test_general_does_not_inherit_place_year) ... ok
+test_metadata_wrong_species_not_used_to_fill_count (test_v11.SearchAndAnalysisTests.test_metadata_wrong_species_not_used_to_fill_count) ... ok
+test_query_400_does_not_disable_provider_for_english (test_v11.SearchAndAnalysisTests.test_query_400_does_not_disable_provider_for_english) ... ok
+test_real_and_mock_reports_separated (test_v11.SearchAndAnalysisTests.test_real_and_mock_reports_separated) ... ok
+test_rejected_candidates_can_be_replaced (test_v11.SearchAndAnalysisTests.test_rejected_candidates_can_be_replaced) ... ok
+test_separate_years_hypothesis_and_regions_with_evidence (test_v11.SearchAndAnalysisTests.test_separate_years_hypothesis_and_regions_with_evidence) ... ok
+test_keys_private_and_blank_preserves_existing (test_v11.SettingsTests.test_keys_private_and_blank_preserves_existing) ... ok
+
+----------------------------------------------------------------------
+Ran 48 tests in 0.561s
+
+OK (skipped=5)

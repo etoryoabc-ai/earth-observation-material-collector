@@ -1,5 +1,11 @@
 # Windows用配布ファイル
 
+最新版（Windows起動修正）：[earth-observation-material-collector-v1.1.1.zip](earth-observation-material-collector-v1.1.1.zip)
+
+[起動修正の内容と手順](../docs/v1.1.1起動修正.md)
+
+以下のv1.1 ZIPは旧版です。起動.batの問題があるため、v1.1.1を使用してください。
+
 [earth-observation-material-collector-v1.1.zip](earth-observation-material-collector-v1.1.zip)
 
 GitHub上ではZIPのファイルページを開き、Download raw file（ダウンロード）を選択してください。非公開リポジトリの場合はGitHubへのログインが必要です。

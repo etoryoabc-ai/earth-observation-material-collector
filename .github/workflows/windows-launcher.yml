@@ -6,6 +6,8 @@ on:
       - 'launcher.py'
       - 'tests/test_launcher*.py'
       - '.github/workflows/windows-launcher.yml'
+      - 'tools/package_release.py'
+      - 'downloads/*v1.1.1.zip'
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,3 +22,5 @@ jobs:
           python-version: '3.12'
       - name: All tests including actual cmd.exe and Japanese paths
         run: python -m unittest discover -s tests -v
+      - name: Verify distributed ZIP after extraction
+        run: python tools/package_release.py --verify-only
