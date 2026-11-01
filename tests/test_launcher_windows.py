@@ -41,3 +41,27 @@ class WindowsBatchTests(unittest.TestCase):
     def test_incomplete_extraction_pauses(self):
         code,out,_=self.run_case(missing_app=True)
         self.assertNotEqual(code,0,out);self.assertIn('Application files are missing',out)
+
+    def test_real_application_http_start_via_launcher(self):
+        import queue
+        import threading
+        from urllib.request import urlopen
+        with tempfile.TemporaryDirectory() as tmp:
+            process=subprocess.Popen([sys.executable,'-X','utf8','-u',str(ROOT/'launcher.py'),'--no-browser','--port','0','--data-dir',tmp],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8',cwd=ROOT)
+            lines=queue.Queue()
+            def read():
+                for line in process.stdout:lines.put(line)
+            reader=threading.Thread(target=read,daemon=True);reader.start()
+            try:
+                captured=[]
+                while True:
+                    line=lines.get(timeout=20);captured.append(line)
+                    if 'http://127.0.0.1:' in line:
+                        url='http://'+line.split('http://')[1].split(' ')[0].strip()
+                        break
+                with urlopen(url,timeout=5) as response:
+                    self.assertEqual(response.status,200)
+                    self.assertIn('地球の観察録',response.read().decode('utf-8'))
+            finally:
+                process.terminate();process.wait(timeout=10)
+                reader.join(timeout=5);process.stdout.close()
