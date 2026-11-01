@@ -3,7 +3,7 @@ import re
 import hashlib
 from .analysis import details, annotate_offsets
 
-HEADING=re.compile(r'(?m)^[ \t]*(?:#{1,6}[ \t]+[^\r\n]+|[【\[]?(?:第[0-9０-９一二三四五六七八九十]+章|導入|プロローグ|結び|終章|エピローグ)(?:[^\r\n]*)|[0-9０-９]+[.．、][ \t]+[^\r\n]+)\r?\n?')
+HEADING=re.compile(r'(?m)^[ \t]*(?:#{1,6}[ \t]+[^\r\n]+|[【\[]?第[0-9０-９一二三四五六七八九十]+章[^\r\n]*|[【\[]?(?:導入|プロローグ|結び|終章|エピローグ)(?=[ \t:：】\]\r\n]|$)[^\r\n]*|[0-9０-９]+[.．、][ \t]+[^\r\n]+)\r?\n?')
 TOPICS=(
  ('history','毛皮|乱獲|狩猟|禁猟|保護条約|交易'),
  ('reintroduction','再導入|再定着|移入|移送|再移入'),
@@ -40,7 +40,7 @@ def units(source):
         body(cursor,m.start())
         label=m.group().strip().lstrip('#').strip()
         # A video title / H1 remains structural metadata, not a new search scene.
-        if re.search(r'第.+章|導入|結び|終章|プロローグ|エピローグ',label) or m.group().lstrip().startswith('##'):
+        if re.match(r'^[【\[]?(?:第[0-9０-９一二三四五六七八九十]+章|(?:導入|結び|終章|プロローグ|エピローグ)(?=[ :：】\]]|$))',label) or re.match(r'^##(?!#)[ \t]',m.group().lstrip()):
             chapter=label
         append(m.start(),m.end(),'heading');cursor=m.end()
     body(cursor,len(source))
@@ -50,7 +50,7 @@ def units(source):
         if unit['kind']=='body':
             if previous and previous['chapter']==unit['chapter'] and not unit['analysis']['places'] and re.search('この島|この海域|その場所',unit['text']):
                 if previous['analysis']['places']:
-                    unit['context_inferences']=[dict(kind='場所の指示語',suggested=[x['ja'] for x in previous['analysis']['places']],certainty='推定・要確認',evidence_unit_id=previous['id'])]
+                    unit['context_inferences']=[dict(kind='場所の指示語',suggested=[x['ja'] for x in previous['analysis']['places']],certainty='推定・要確認',evidence_unit_id=previous['id'],evidence_source_start=previous['start'])]
             previous=unit
     if ''.join(x['text'] for x in result)!=source:raise ValueError('文単位の原稿保持検査に失敗しました。')
     return result
@@ -73,7 +73,12 @@ def rebuild(source,groups):
         scene=dict(id=i,chapter=chapter,start=lo,end=hi,text=text,unit_ids=unit_ids,
                    visual_topic=visual_topic,**d)
         scene['summary']=LABELS.get(visual_topic,visual_topic)+'：'+body.strip()[:100]
-        scene['context_inferences']=[x for u in units(text) for x in u.get('context_inferences',[])]
+        scene['context_inferences']=[]
+        for u in units(text):
+            for inference in u.get('context_inferences',[]):
+                item=dict(inference);item['evidence_source_start']+=lo
+                local_id=item['evidence_unit_id'];item['evidence_unit_id']=unit_ids[local_id-1] if local_id<=len(unit_ids) else None
+                scene['context_inferences'].append(item)
         scenes.append(scene)
     annotate_offsets(scenes)
     validate(source,scenes)

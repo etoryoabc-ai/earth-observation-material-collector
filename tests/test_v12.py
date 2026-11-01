@@ -134,3 +134,12 @@ class MetadataAndRightsTests(unittest.TestCase):
             a=base('test',str(sid),'asset','https://example.org','video');a.update(scene_id=sid,id=str(sid),material_number=1,decision='adopt');p['assets'].append(a)
         edit_structure(p,'merge',1)
         self.assertEqual(len({a['material_number'] for a in p['assets']}),2)
+
+    def test_narrative_prefix_is_not_heading_and_subheadings_not_chapters(self):
+        source='# 世界を結びつける森\n導入\n結びつきが重要です。導入された動物を説明します。\n第1章\nラッコの生態です。\n### 小見出し\nウニを食べます。'
+        units,scenes=group(source)
+        body=[u for u in units if u['kind']=='body']
+        self.assertTrue(any('結びつき' in u['text'] for u in body))
+        self.assertTrue(any('導入された' in u['text'] for u in body))
+        self.assertEqual(set(u['chapter'] for u in body),{'導入','第1章'})
+        validate(source,scenes)
